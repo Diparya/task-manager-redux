@@ -2,15 +2,25 @@
 
 import React, { useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { addTask, editTask, deleteTask, toggleTaskCompletion } from '@/store/tasksSlice';
+import {
+  addTask,
+  editTask,
+  deleteTask,
+  toggleTaskCompletion,
+} from '@/store/tasksSlice';
 
 const TaskDashboard = () => {
   const dispatch = useDispatch();
   const tasks = useSelector((state) => state.tasks.tasks);
 
-  const [newTask, setNewTask] = useState({ title: '', description: '', dueDate: '' });
+  const [newTask, setNewTask] = useState({
+    title: '',
+    description: '',
+    dueDate: '',
+  });
   const [editingTaskId, setEditingTaskId] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [filter, setFilter] = useState('all');
 
   const handleAddOrUpdateTask = () => {
     if (!newTask.title.trim() || !newTask.dueDate.trim()) return;
@@ -39,11 +49,19 @@ const TaskDashboard = () => {
     setNewTask({ title: '', description: '', dueDate: '' });
   };
 
-  const filteredTasks = tasks.filter(
-    (task) =>
+  const currentDate = new Date().toISOString().split('T')[0];
+
+  const filteredTasks = tasks.filter((task) => {
+    const matchesSearch =
       task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      task.description.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+      task.description.toLowerCase().includes(searchQuery.toLowerCase());
+
+    if (filter === 'completed') return matchesSearch && task.completed;
+    if (filter === 'pending') return matchesSearch && !task.completed;
+    if (filter === 'overdue')
+      return matchesSearch && task.dueDate < currentDate && !task.completed;
+    return matchesSearch; // 'all' filter
+  });
 
   return (
     <div className="min-h-screen bg-gray-100 p-2">
@@ -71,7 +89,9 @@ const TaskDashboard = () => {
           <input
             type="date"
             value={newTask.dueDate}
-            onChange={(e) => setNewTask({ ...newTask, dueDate: e.target.value })}
+            onChange={(e) =>
+              setNewTask({ ...newTask, dueDate: e.target.value })
+            }
             className="text-gray-600 w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
           />
           <div className="flex justify-between items-center">
@@ -102,6 +122,23 @@ const TaskDashboard = () => {
           onChange={(e) => setSearchQuery(e.target.value)}
           className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-600"
         />
+      </div>
+
+      {/* Filter Buttons */}
+      <div className="max-w-4xl mx-auto flex justify-around p-4">
+        {['all', 'completed', 'pending', 'overdue'].map((filterType) => (
+          <button
+            key={filterType}
+            onClick={() => setFilter(filterType)}
+            className={`py-2 px-4 rounded ${
+              filter === filterType
+                ? 'bg-blue-600 text-white'
+                : 'bg-gray-300 text-gray-800'
+            }`}
+          >
+            {filterType.charAt(0).toUpperCase() + filterType.slice(1)} Tasks
+          </button>
+        ))}
       </div>
 
       {/* Task List */}
